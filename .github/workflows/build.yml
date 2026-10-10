@@ -10,7 +10,7 @@ jobs:
       matrix:
         include:
           - { os: macos-latest, args: "--target aarch64-apple-darwin" }
-          - { os: macos-13, args: "--target x86_64-apple-darwin" }
+          - { os: macos-15-intel, args: "--target x86_64-apple-darwin" }
           - { os: windows-latest, args: "" }
           - { os: ubuntu-22.04, args: "" }
     runs-on: ${{ matrix.os }}
