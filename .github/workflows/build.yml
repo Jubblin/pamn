@@ -1,0 +1,101 @@
+name: build
+on:
+  push: { branches: [main] }
+  pull_request:
+  workflow_dispatch:
+concurrency:
+  group: ${{ github.workflow }}-${{ github.ref }}
+  cancel-in-progress: true
+jobs:
+  build:
+    strategy:
+      fail-fast: false
+      matrix:
+        include:
+          - { os: macos-latest, args: "--target aarch64-apple-darwin" }
+          - { os: macos-15-intel, args: "--target x86_64-apple-darwin" }
+          - { os: windows-latest, args: "" }
+          - { os: ubuntu-22.04, args: "" }
+    runs-on: ${{ matrix.os }}
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with: { node-version: 20, cache: npm }
+      - uses: dtolnay/rust-toolchain@stable
+        with:
+          targets: ${{ startsWith(matrix.os, 'macos') && 'aarch64-apple-darwin,x86_64-apple-darwin' || '' }}
+      - uses: swatinem/rust-cache@v2
+        with: { workspaces: src-tauri }
+      - name: Linux deps
+        if: matrix.os == 'ubuntu-22.04'
+        run: |
+          sudo apt-get update
+          sudo apt-get install -y libwebkit2gtk-4.1-dev libappindicator3-dev librsvg2-dev patchelf libssl-dev
+      - run: npm ci
+      - run: npm test
+      - name: Fetch bundled nmap
+        shell: bash
+        run: scripts/fetch-nmap.sh
+      - run: npx tauri build ${{ matrix.args }}
+      - name: Verify bundled nmap (macOS/Linux)
+        if: runner.os != 'Windows'
+        shell: bash
+        run: |
+          N=src-tauri/resources/nmap
+          NMAPDIR=$PWD/$N $N/nmap --version
+          NMAPDIR=$PWD/$N $N/nmap -sT -p 1-1024 127.0.0.1 | tee /tmp/scan.txt; grep -q "Nmap done" /tmp/scan.txt
+      - name: Verify AppImage has bundled nmap
+        if: runner.os == 'Linux'
+        run: |
+          A=$(ls src-tauri/target/release/bundle/appimage/*.AppImage)
+          chmod +x "$A"; "$A" --appimage-extract >/dev/null
+          F=$(find squashfs-root -path '*nmap/nmap' -type f | head -1); test -n "$F"
+          NMAPDIR=$(dirname "$F") "$F" -sT -p 1-1024 127.0.0.1 | grep -q "Nmap done"
+      - name: Verify bundled nmap (Windows, Npcap not installed)
+        if: runner.os == 'Windows'
+        shell: bash
+        run: |
+          # nmap.exe needs Npcap's wpcap.dll, which is intentionally not bundled; installing it
+          # (interactive-only for the free edition) is not possible on CI, so only check files are present.
+          test -f src-tauri/resources/nmap/nmap.exe
+          ! ls src-tauri/resources/nmap/npcap*.exe
+          ls src-tauri/target/release/bundle/nsis/*.exe
+      - name: Verify nmap.exe runtime dependencies (Windows)
+        if: runner.os == 'Windows'
+        shell: bash
+        run: |
+          N=src-tauri/resources/nmap
+          test -f $N/vc_redist.x86.exe
+          # Install the bundled redistributable exactly as the NSIS hook does, then run nmap.exe.
+          echo "installing vc_redist"; # Wait on the installer process only: its vctip.exe telemetry child keeps inherited pipes open and hangs a bash wait.
+          rc=$(powershell -NoProfile -Command "\$p = Start-Process -PassThru (Resolve-Path $N/vc_redist.x86.exe) -ArgumentList '/install','/quiet','/norestart'; if (-not \$p.WaitForExit(300000)) { 124 } else { \$p.ExitCode }" </dev/null | tail -1 | tr -d '\r'); echo "vc_redist rc=$rc"
+          case $rc in 0|1638|3010) ;; *) echo "vc_redist failed: $rc"; exit 1;; esac
+          # Every DLL nmap.exe and its sibling DLLs import must be bundled, a Windows system DLL,
+          # the UCRT api-set, the VC++ runtime (installed above), or Npcap (intentionally absent).
+          cd $N
+          timeout 300 pip install -q pefile
+          python - <<'PY'
+          import glob, os, pefile
+          sys32 = os.path.join(os.environ["WINDIR"], "SysWOW64")
+          local = {f.lower() for f in os.listdir(".")}
+          bad = []
+          for f in ["nmap.exe"] + glob.glob("*.dll"):
+              pe = pefile.PE(f)
+              for e in pe.DIRECTORY_ENTRY_IMPORT:
+                  d = e.dll.decode().lower()
+                  if d in ("wpcap.dll", "packet.dll") or d.startswith("api-ms-win-"): continue
+                  if d in local or os.path.exists(os.path.join(sys32, d)): continue
+                  bad.append((f, d))
+          print("missing:", bad)
+          raise SystemExit(1 if bad else 0)
+          PY
+          echo "running nmap.exe"; timeout 60 ./nmap.exe --version
+      - uses: actions/upload-artifact@v4
+        with:
+          name: pamn-${{ matrix.os }}
+          path: |
+            src-tauri/target/**/release/bundle/dmg/*.dmg
+            src-tauri/target/**/release/bundle/nsis/*.exe
+            src-tauri/target/**/release/bundle/msi/*.msi
+            src-tauri/target/**/release/bundle/deb/*.deb
+            src-tauri/target/**/release/bundle/appimage/*.AppImage

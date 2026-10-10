@@ -1,0 +1,103 @@
+Starting Nmap 7.991 ( https://nmap.org ) at 2026-10-10 14:08 +0100
+Stats: 0:00:02 elapsed; 0 hosts completed (2 up), 2 undergoing Service Scan
+Service scan Timing: About 50.00% done; ETC: 14:09 (0:00:01 remaining)
+Stats: 0:00:06 elapsed; 0 hosts completed (2 up), 2 undergoing Service Scan
+Service scan Timing: About 60.00% done; ETC: 14:09 (0:00:01 remaining)
+Stats: 0:00:11 elapsed; 0 hosts completed (2 up), 2 undergoing Service Scan
+Service scan Timing: About 60.00% done; ETC: 14:09 (0:00:02 remaining)
+Stats: 0:00:19 elapsed; 0 hosts completed (2 up), 2 undergoing Service Scan
+Service scan Timing: About 70.00% done; ETC: 14:09 (0:00:02 remaining)
+Nmap scan report for localhost (127.0.0.1)
+Host is up (0.000086s latency).
+Not shown: 195 closed tcp ports (conn-refused)
+PORT     STATE SERVICE    VERSION
+22/tcp   open  ssh        OpenSSH 10.5 (protocol 2.0)
+88/tcp   open  tcpwrapped
+5000/tcp open  rtsp
+5900/tcp open  vnc        Apple remote desktop vnc
+7000/tcp open  rtsp
+2 services unrecognized despite returning data. If you know the service/version, please submit the following fingerprints at https://nmap.org/cgi-bin/submit.cgi?new-service :
+==============NEXT SERVICE FINGERPRINT (SUBMIT INDIVIDUALLY)==============
+SF-Port5000-TCP:V=7.991%I=7%D=10/10%Time=6ACA38F0%P=arm-apple-darwin25.6.0
+SF:%r(GetRequest,91,"HTTP/1\.1\x20403\x20Forbidden\r\nContent-Length:\x200
+SF:\r\nServer:\x20AirTunes/1005\.12\.1\r\nX-Apple-ProcessingTime:\x200\r\n
+SF:X-Apple-RequestReceivedTimestamp:\x20219821126\r\n\r\n")%r(RTSPRequest,
+SF:91,"RTSP/1\.0\x20403\x20Forbidden\r\nContent-Length:\x200\r\nServer:\x2
+SF:0AirTunes/1005\.12\.1\r\nX-Apple-ProcessingTime:\x200\r\nX-Apple-Reques
+SF:tReceivedTimestamp:\x20219821148\r\n\r\n")%r(HTTPOptions,91,"HTTP/1\.1\
+SF:x20403\x20Forbidden\r\nContent-Length:\x200\r\nServer:\x20AirTunes/1005
+SF:\.12\.1\r\nX-Apple-ProcessingTime:\x200\r\nX-Apple-RequestReceivedTimes
+SF:tamp:\x20219826149\r\n\r\n")%r(FourOhFourRequest,91,"HTTP/1\.1\x20403\x
+SF:20Forbidden\r\nContent-Length:\x200\r\nServer:\x20AirTunes/1005\.12\.1\
+SF:r\nX-Apple-ProcessingTime:\x200\r\nX-Apple-RequestReceivedTimestamp:\x2
+SF:0219826152\r\n\r\n")%r(SIPOptions,91,"RTSP/1\.0\x20403\x20Forbidden\r\n
+SF:Content-Length:\x200\r\nServer:\x20AirTunes/1005\.12\.1\r\nX-Apple-Proc
+SF:essingTime:\x200\r\nX-Apple-RequestReceivedTimestamp:\x20219826155\r\n\
+SF:r\n");
+==============NEXT SERVICE FINGERPRINT (SUBMIT INDIVIDUALLY)==============
+SF-Port7000-TCP:V=7.991%I=7%D=10/10%Time=6ACA38F5%P=arm-apple-darwin25.6.0
+SF:%r(RTSPRequest,91,"RTSP/1\.0\x20403\x20Forbidden\r\nContent-Length:\x20
+SF:0\r\nServer:\x20AirTunes/1005\.12\.1\r\nX-Apple-ProcessingTime:\x200\r\
+SF:nX-Apple-RequestReceivedTimestamp:\x20219821124\r\n\r\n")%r(GetRequest,
+SF:91,"HTTP/1\.1\x20403\x20Forbidden\r\nContent-Length:\x200\r\nServer:\x2
+SF:0AirTunes/1005\.12\.1\r\nX-Apple-ProcessingTime:\x200\r\nX-Apple-Reques
+SF:tReceivedTimestamp:\x20219826128\r\n\r\n")%r(HTTPOptions,91,"HTTP/1\.1\
+SF:x20403\x20Forbidden\r\nContent-Length:\x200\r\nServer:\x20AirTunes/1005
+SF:\.12\.1\r\nX-Apple-ProcessingTime:\x200\r\nX-Apple-RequestReceivedTimes
+SF:tamp:\x20219826133\r\n\r\n")%r(FourOhFourRequest,91,"HTTP/1\.1\x20403\x
+SF:20Forbidden\r\nContent-Length:\x200\r\nServer:\x20AirTunes/1005\.12\.1\
+SF:r\nX-Apple-ProcessingTime:\x200\r\nX-Apple-RequestReceivedTimestamp:\x2
+SF:0219826136\r\n\r\n")%r(SIPOptions,91,"RTSP/1\.0\x20403\x20Forbidden\r\n
+SF:Content-Length:\x200\r\nServer:\x20AirTunes/1005\.12\.1\r\nX-Apple-Proc
+SF:essingTime:\x200\r\nX-Apple-RequestReceivedTimestamp:\x20219826140\r\n\
+SF:r\n");
+Service Info: OS: Mac OS X; CPE: cpe:/o:apple:mac_os_x
+
+Nmap scan report for 10.2.254.42
+Host is up (0.000084s latency).
+Not shown: 195 closed tcp ports (conn-refused)
+PORT     STATE SERVICE    VERSION
+22/tcp   open  ssh        OpenSSH 10.5 (protocol 2.0)
+88/tcp   open  tcpwrapped
+5000/tcp open  rtsp
+5900/tcp open  vnc        Apple remote desktop vnc
+7000/tcp open  rtsp
+2 services unrecognized despite returning data. If you know the service/version, please submit the following fingerprints at https://nmap.org/cgi-bin/submit.cgi?new-service :
+==============NEXT SERVICE FINGERPRINT (SUBMIT INDIVIDUALLY)==============
+SF-Port5000-TCP:V=7.991%I=7%D=10/10%Time=6ACA38F0%P=arm-apple-darwin25.6.0
+SF:%r(GetRequest,91,"HTTP/1\.1\x20403\x20Forbidden\r\nContent-Length:\x200
+SF:\r\nServer:\x20AirTunes/1005\.12\.1\r\nX-Apple-ProcessingTime:\x200\r\n
+SF:X-Apple-RequestReceivedTimestamp:\x20219821146\r\n\r\n")%r(RTSPRequest,
+SF:91,"RTSP/1\.0\x20403\x20Forbidden\r\nContent-Length:\x200\r\nServer:\x2
+SF:0AirTunes/1005\.12\.1\r\nX-Apple-ProcessingTime:\x200\r\nX-Apple-Reques
+SF:tReceivedTimestamp:\x20219821150\r\n\r\n")%r(HTTPOptions,91,"HTTP/1\.1\
+SF:x20403\x20Forbidden\r\nContent-Length:\x200\r\nServer:\x20AirTunes/1005
+SF:\.12\.1\r\nX-Apple-ProcessingTime:\x200\r\nX-Apple-RequestReceivedTimes
+SF:tamp:\x20219826151\r\n\r\n")%r(FourOhFourRequest,91,"HTTP/1\.1\x20403\x
+SF:20Forbidden\r\nContent-Length:\x200\r\nServer:\x20AirTunes/1005\.12\.1\
+SF:r\nX-Apple-ProcessingTime:\x200\r\nX-Apple-RequestReceivedTimestamp:\x2
+SF:0219826154\r\n\r\n")%r(SIPOptions,91,"RTSP/1\.0\x20403\x20Forbidden\r\n
+SF:Content-Length:\x200\r\nServer:\x20AirTunes/1005\.12\.1\r\nX-Apple-Proc
+SF:essingTime:\x200\r\nX-Apple-RequestReceivedTimestamp:\x20219826157\r\n\
+SF:r\n");
+==============NEXT SERVICE FINGERPRINT (SUBMIT INDIVIDUALLY)==============
+SF-Port7000-TCP:V=7.991%I=7%D=10/10%Time=6ACA38F5%P=arm-apple-darwin25.6.0
+SF:%r(RTSPRequest,91,"RTSP/1\.0\x20403\x20Forbidden\r\nContent-Length:\x20
+SF:0\r\nServer:\x20AirTunes/1005\.12\.1\r\nX-Apple-ProcessingTime:\x200\r\
+SF:nX-Apple-RequestReceivedTimestamp:\x20219821126\r\n\r\n")%r(GetRequest,
+SF:91,"HTTP/1\.1\x20403\x20Forbidden\r\nContent-Length:\x200\r\nServer:\x2
+SF:0AirTunes/1005\.12\.1\r\nX-Apple-ProcessingTime:\x200\r\nX-Apple-Reques
+SF:tReceivedTimestamp:\x20219826129\r\n\r\n")%r(HTTPOptions,91,"HTTP/1\.1\
+SF:x20403\x20Forbidden\r\nContent-Length:\x200\r\nServer:\x20AirTunes/1005
+SF:\.12\.1\r\nX-Apple-ProcessingTime:\x200\r\nX-Apple-RequestReceivedTimes
+SF:tamp:\x20219826133\r\n\r\n")%r(FourOhFourRequest,91,"HTTP/1\.1\x20403\x
+SF:20Forbidden\r\nContent-Length:\x200\r\nServer:\x20AirTunes/1005\.12\.1\
+SF:r\nX-Apple-ProcessingTime:\x200\r\nX-Apple-RequestReceivedTimestamp:\x2
+SF:0219826137\r\n\r\n")%r(SIPOptions,91,"RTSP/1\.0\x20403\x20Forbidden\r\n
+SF:Content-Length:\x200\r\nServer:\x20AirTunes/1005\.12\.1\r\nX-Apple-Proc
+SF:essingTime:\x200\r\nX-Apple-RequestReceivedTimestamp:\x20219826141\r\n\
+SF:r\n");
+Service Info: OS: Mac OS X; CPE: cpe:/o:apple:mac_os_x
+
+Service detection performed. Please report any incorrect results at https://nmap.org/submit/ .
+Nmap done: 2 IP addresses (2 hosts up) scanned in 19.29 seconds

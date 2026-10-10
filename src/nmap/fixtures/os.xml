@@ -1,0 +1,38 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!DOCTYPE nmaprun>
+<?xml-stylesheet href="file:///usr/share/nmap/nmap.xsl" type="text/xsl"?>
+<!-- Nmap 7.94 scan initiated Sat Oct 10 13:00:00 2026 as: nmap -A -oX os.xml scanme.nmap.org -->
+<nmaprun scanner="nmap" args="nmap -A -oX os.xml scanme.nmap.org" start="1791633600" startstr="Sat Oct 10 13:00:00 2026" version="7.94" xmloutputversion="1.05">
+<scaninfo type="syn" protocol="tcp" numservices="1000" services="1-1000"/>
+<verbose level="0"/>
+<debugging level="0"/>
+<host starttime="1791633601" endtime="1791633630"><status state="up" reason="echo-reply" reason_ttl="52"/>
+<address addr="45.33.32.156" addrtype="ipv4"/>
+<hostnames>
+<hostname name="scanme.nmap.org" type="user"/>
+<hostname name="scanme.nmap.org" type="PTR"/>
+</hostnames>
+<ports><extraports state="closed" count="997">
+<extrareasons reason="resets" count="997"/>
+</extraports>
+<port protocol="tcp" portid="22"><state state="open" reason="syn-ack" reason_ttl="52"/><service name="ssh" product="OpenSSH" version="6.6.1p1 Ubuntu 2ubuntu2.13" extrainfo="Ubuntu Linux; protocol 2.0" ostype="Linux" method="probed" conf="10"><cpe>cpe:/a:openbsd:openssh:6.6.1p1</cpe><cpe>cpe:/o:linux:linux_kernel</cpe></service><script id="ssh-hostkey" output="&#xa;  1024 ac:00:a0:1a:82:ff:cc:55:99:dc:67:2b:34:97:6b:75 (DSA)&#xa;  2048 20:3d:2d:44:62:2a:b0:5a:9d:b5:b3:05:14:c2:a6:b2 (RSA)"><table>
+<elem key="type">ssh-dss</elem>
+<elem key="bits">1024</elem>
+</table>
+</script></port>
+<port protocol="tcp" portid="80"><state state="open" reason="syn-ack" reason_ttl="52"/><service name="http" product="Apache httpd" version="2.4.7" extrainfo="(Ubuntu)" method="probed" conf="10"><cpe>cpe:/a:apache:http_server:2.4.7</cpe></service><script id="http-title" output="Go ahead and ScanMe!"><elem key="title">Go ahead and ScanMe!</elem>
+</script></port>
+<port protocol="tcp" portid="9929"><state state="open" reason="syn-ack" reason_ttl="52"/><service name="nping-echo" method="probed" conf="10"/></port>
+</ports>
+<os><portused state="open" proto="tcp" portid="22"/><portused state="closed" proto="tcp" portid="1"/><osmatch name="Linux 3.2 - 4.9" accuracy="100" line="66000"><osclass type="general purpose" vendor="Linux" osfamily="Linux" osgen="3.X" accuracy="100"><cpe>cpe:/o:linux:linux_kernel:3</cpe></osclass></osmatch><osmatch name="Linux 3.10 - 4.11" accuracy="96" line="65000"><osclass type="general purpose" vendor="Linux" osfamily="Linux" osgen="4.X" accuracy="96"></osclass></osmatch></os>
+<uptime seconds="1234567" lastboot="Fri Sep 26 10:00:00 2026"/>
+<trace port="80" proto="tcp">
+<hop ttl="1" ipaddr="192.168.1.1" rtt="1.20"/>
+<hop ttl="2" ipaddr="10.0.0.1" rtt="8.50" host="gw.isp.net"/>
+<hop ttl="3" ipaddr="45.33.32.156" rtt="152.30" host="scanme.nmap.org"/>
+</trace>
+<times srtt="150000" rttvar="2000" to="158000"/>
+</host>
+<runstats><finished time="1791633630" timestr="Sat Oct 10 13:00:30 2026" summary="Nmap done at Sat Oct 10 13:00:30 2026; 1 IP address (1 host up) scanned in 29.50 seconds" elapsed="29.50" exit="success"/><hosts up="1" down="0" total="1"/>
+</runstats>
+</nmaprun>

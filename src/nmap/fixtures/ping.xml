@@ -1,0 +1,25 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!DOCTYPE nmaprun>
+<?xml-stylesheet href="file:///opt/homebrew/bin/../share/nmap/nmap.xsl" type="text/xsl"?>
+<!-- Nmap 7.991 scan initiated Sat Oct 10 13:57:47 2026 as: nmap -sn -oX ping.xml 127.0.0.1 localhost -->
+<nmaprun scanner="nmap" args="nmap -sn -oX ping.xml 127.0.0.1 localhost" start="1791637067" startstr="Sat Oct 10 13:57:47 2026" version="7.991" xmloutputversion="1.05">
+<verbose level="0"/>
+<debugging level="0"/>
+<host><status state="up" reason="conn-refused" reason_ttl="0"/>
+<address addr="127.0.0.1" addrtype="ipv4"/>
+<hostnames>
+<hostname name="localhost" type="PTR"/>
+</hostnames>
+<times srtt="74" rttvar="5000" to="100000"/>
+</host>
+<host><status state="up" reason="conn-refused" reason_ttl="0"/>
+<address addr="127.0.0.1" addrtype="ipv4"/>
+<hostnames>
+<hostname name="localhost" type="user"/>
+<hostname name="localhost" type="PTR"/>
+</hostnames>
+<times srtt="93" rttvar="5000" to="100000"/>
+</host>
+<runstats><finished time="1791637067" timestr="Sat Oct 10 13:57:47 2026" summary="Nmap done at Sat Oct 10 13:57:47 2026; 2 IP addresses (2 hosts up) scanned in 0.01 seconds" elapsed="0.01" exit="success"/><hosts up="2" down="0" total="2"/>
+</runstats>
+</nmaprun>
