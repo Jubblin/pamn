@@ -64,7 +64,8 @@ jobs:
           N=src-tauri/resources/nmap
           test -f $N/vc_redist.x86.exe
           # Install the bundled redistributable exactly as the NSIS hook does, then run nmap.exe.
-          echo "installing vc_redist"; rc=0; timeout 300 $N/vc_redist.x86.exe /install /quiet /norestart || rc=$?; echo "vc_redist rc=$rc"
+          echo "installing vc_redist"; # Wait on the installer process only: its vctip.exe telemetry child keeps inherited pipes open and hangs a bash wait.
+          rc=$(powershell -NoProfile -Command "\$p = Start-Process -PassThru (Resolve-Path $N/vc_redist.x86.exe) -ArgumentList '/install','/quiet','/norestart'; if (-not \$p.WaitForExit(300000)) { 124 } else { \$p.ExitCode }" </dev/null | tail -1 | tr -d '\r'); echo "vc_redist rc=$rc"
           case $rc in 0|1638|3010) ;; *) echo "vc_redist failed: $rc"; exit 1;; esac
           # Every DLL nmap.exe and its sibling DLLs import must be bundled, a Windows system DLL,
           # the UCRT api-set, the VC++ runtime (installed above), or Npcap (intentionally absent).
