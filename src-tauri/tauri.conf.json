@@ -1,0 +1,22 @@
+{
+  "$schema": "https://schema.tauri.app/config/2",
+  "productName": "Small Desktop",
+  "version": "0.1.0",
+  "identifier": "com.smalldesktop.app",
+  "build": {
+    "beforeDevCommand": "npm run dev",
+    "devUrl": "http://localhost:1420",
+    "beforeBuildCommand": "npm run build",
+    "frontendDist": "../dist"
+  },
+  "app": {
+    "windows": [{ "title": "Small Desktop", "width": 900, "height": 640 }],
+    "security": { "csp": null }
+  },
+  "bundle": {
+    "active": true,
+    "targets": "all",
+    "resources": { "resources/nmap/": "nmap/" },
+    "icon": ["icons/icon.png"]
+  }
+}
