@@ -105,6 +105,8 @@ button:disabled, input:disabled, select:disabled { cursor: not-allowed; opacity:
 
 .banner { border-radius: var(--r); padding: 14px 18px; display: flex; gap: 16px; align-items: center; justify-content: space-between; }
 .banner p { margin: 4px 0 0; }
+.banner > div { min-width: 0; }
+.banner .btn { flex-shrink: 0; }
 .banner.warn { background: var(--warn-soft); color: var(--warn); }
 .banner.info { background: var(--info-soft); color: var(--text); border: 1px solid color-mix(in srgb, var(--info) 35%, transparent); }
 .banner.info strong { color: var(--info); }
