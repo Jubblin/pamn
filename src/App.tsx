@@ -4,6 +4,7 @@ import { cancelScan, detectNmap, onScanEvents, startScan, type DoneEvent, type N
 import { PRESETS, SCAN_TYPES, TIMINGS, applyFlags, invalidTarget, optionsKey, presetKey } from "./ui/presets";
 import { useStored, type HistoryItem, type Profile } from "./ui/store";
 import Results from "./results/Results";
+import About from "./ui/About";
 import Palette, { type PaletteItem } from "./ui/Palette";
 import { rovingKeys } from "./ui/roving";
 import { parseLive } from "./results/model";
@@ -44,6 +45,8 @@ export default function App() {
   const [showLog, setShowLog] = useState(true);
   const [naming, setNaming] = useState<string | null>(null);
   const [palette, setPalette] = useState(false);
+  const [welcomed, setWelcomed] = useStored("sd.welcomed", false);
+  const [about, setAbout] = useState(false);
   const [copyMsg, setCopyMsg] = useState("");
 
   const tabsRef = useRef(tabs);
@@ -198,6 +201,7 @@ export default function App() {
   };
   const paletteItems: PaletteItem[] = [
     ...(running || !nmap ? [] : PRESETS.map((p) => ({ id: "run-" + p.id, label: `Run: ${p.name}`, hint: p.flags, run: () => goPreset(p.flags) }))),
+    { id: "about", label: "About Pamn", run: () => setAbout(true) },
     { id: "open", label: "Open saved scan file…", run: () => fileInput.current?.click() },
     ...(["system", "light", "dark"] as const).map((t) => ({ id: "theme-" + t, label: `Theme: ${t[0].toUpperCase() + t.slice(1)}`, hint: theme === t ? "current" : undefined, run: () => setTheme(t) })),
   ];
@@ -275,6 +279,7 @@ export default function App() {
               ))}
             </ul>
           </section>
+          <div className="rail-foot"><button className="link" onClick={() => setAbout(true)}>About Pamn</button></div>
         </aside>
 
         <main className="main" key={tab.key}>
@@ -372,6 +377,7 @@ export default function App() {
 
         </main>
       </div>
+      {(about || !welcomed) && <About nmap={nmap} welcome={!welcomed && !about} onClose={() => { setAbout(false); setWelcomed(true); }} />}
       {palette && <Palette items={paletteItems} onClose={() => setPalette(false)} />}
     </div>
   );
