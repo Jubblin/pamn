@@ -64,12 +64,12 @@ jobs:
           N=src-tauri/resources/nmap
           test -f $N/vc_redist.x86.exe
           # Install the bundled redistributable exactly as the NSIS hook does, then run nmap.exe.
-          rc=0; $N/vc_redist.x86.exe /install /quiet /norestart || rc=$?
+          echo "installing vc_redist"; rc=0; timeout 300 $N/vc_redist.x86.exe /install /quiet /norestart || rc=$?; echo "vc_redist rc=$rc"
           case $rc in 0|1638|3010) ;; *) echo "vc_redist failed: $rc"; exit 1;; esac
           # Every DLL nmap.exe and its sibling DLLs import must be bundled, a Windows system DLL,
           # the UCRT api-set, the VC++ runtime (installed above), or Npcap (intentionally absent).
           cd $N
-          pip install -q pefile
+          timeout 300 pip install -q pefile
           python - <<'PY'
           import glob, os, pefile
           sys32 = os.path.join(os.environ["WINDIR"], "SysWOW64")
@@ -85,7 +85,7 @@ jobs:
           print("missing:", bad)
           raise SystemExit(1 if bad else 0)
           PY
-          ./nmap.exe --version
+          echo "running nmap.exe"; timeout 60 ./nmap.exe --version
       - uses: actions/upload-artifact@v4
         with:
           name: pamn-${{ matrix.os }}
