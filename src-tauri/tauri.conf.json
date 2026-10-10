@@ -35,13 +35,11 @@
       "icons/icon.icns",
       "icons/icon.ico"
     ],
-    "linux": {
-      "deb": {
-        "depends": [
-          "nmap"
-        ]
+    "licenseFile": "../LICENSE",
+    "windows": {
+      "nsis": {
+        "installerHooks": "windows/hooks.nsh"
       }
-    },
-    "licenseFile": "../LICENSE"
+    }
   }
 }

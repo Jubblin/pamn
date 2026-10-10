@@ -27,13 +27,36 @@ jobs:
         if: matrix.os == 'ubuntu-22.04'
         run: |
           sudo apt-get update
-          sudo apt-get install -y libwebkit2gtk-4.1-dev libappindicator3-dev librsvg2-dev patchelf nmap
+          sudo apt-get install -y libwebkit2gtk-4.1-dev libappindicator3-dev librsvg2-dev patchelf libssl-dev
       - run: npm ci
       - run: npm test
       - name: Fetch bundled nmap
         shell: bash
         run: scripts/fetch-nmap.sh
       - run: npx tauri build ${{ matrix.args }}
+      - name: Verify bundled nmap (macOS/Linux)
+        if: runner.os != 'Windows'
+        shell: bash
+        run: |
+          N=src-tauri/resources/nmap
+          NMAPDIR=$PWD/$N $N/nmap --version
+          NMAPDIR=$PWD/$N $N/nmap -sT -p 1-1024 127.0.0.1 | tee /tmp/scan.txt; grep -q "Nmap done" /tmp/scan.txt
+      - name: Verify AppImage has bundled nmap
+        if: runner.os == 'Linux'
+        run: |
+          A=$(ls src-tauri/target/release/bundle/appimage/*.AppImage)
+          chmod +x "$A"; "$A" --appimage-extract >/dev/null
+          F=$(find squashfs-root -path '*nmap/nmap' -type f | head -1); test -n "$F"
+          NMAPDIR=$(dirname "$F") "$F" -sT -p 1-1024 127.0.0.1 | grep -q "Nmap done"
+      - name: Verify bundled nmap (Windows, Npcap not installed)
+        if: runner.os == 'Windows'
+        shell: bash
+        run: |
+          # nmap.exe needs Npcap's wpcap.dll, which is intentionally not bundled; installing it
+          # (interactive-only for the free edition) is not possible on CI, so only check files are present.
+          test -f src-tauri/resources/nmap/nmap.exe
+          ! ls src-tauri/resources/nmap/npcap*.exe
+          ls src-tauri/target/release/bundle/nsis/*.exe
       - uses: actions/upload-artifact@v4
         with:
           name: pamn-${{ matrix.os }}

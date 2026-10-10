@@ -9,12 +9,14 @@ Copyright (c) Nmap Software LLC. Licensed under the Nmap Public Source License
 process. The full license and its bundled third-party licenses are shipped next to
 the binary (`nmap/LICENSE`, `nmap/licenses/`). Source: https://nmap.org/dist/
 
-## Npcap (Windows builds) — https://npcap.com
-The Windows Nmap installer includes the Npcap packet-capture driver, licensed under
-the Npcap license (https://npcap.com/oem/redist.html and https://github.com/nmap/npcap/blob/master/LICENSE).
-Npcap's free license covers non-commercial use of the free edition only; commercial
-redistribution requires an Npcap OEM license. Npcap's own license text is part of
-its installer.
+## Npcap (Windows) — https://npcap.com
+Pamn does **not** bundle or redistribute Npcap. Npcap's licence (https://npcap.com/oem/redist.html,
+https://github.com/nmap/npcap/blob/master/LICENSE) allows the free edition only for personal/internal use
+and requires a paid Npcap OEM licence to redistribute the installer inside a product; the free installer
+also has no silent mode. So the Windows build strips Npcap from the Nmap installer contents, the Pamn
+installer offers to open https://npcap.com/#download when Npcap is absent, and the app shows a
+"Npcap is needed for scanning" banner with the same link. Each user downloads Npcap themselves under its licence.
 
 ## Linux
-No Nmap is bundled; the `.deb` declares a dependency on the distribution's `nmap`.
+A static Nmap built unmodified from the official source tarball by `scripts/fetch-nmap.sh` is bundled
+(AppImage and .deb); no system nmap is needed.

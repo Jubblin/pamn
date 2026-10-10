@@ -1,6 +1,6 @@
 #!/usr/bin/env bash
 # Populate src-tauri/resources/nmap with the official Nmap build for this OS.
-# Linux: nothing bundled (the .deb depends on the distro's nmap; falls back to PATH).
+# Linux: static nmap built from the official source tarball. Windows: official installer contents (Npcap removed).
 set -euo pipefail
 V=7.991
 D="$(cd "$(dirname "$0")/.." && pwd)/src-tauri/resources/nmap"
@@ -29,7 +29,19 @@ MINGW*|MSYS*|CYGWIN*)
   rm -rf "$D"; mkdir -p "$D"
   cp -R "$T/x/." "$D/"
   rm -rf "$D/\$PLUGINSDIR" "$D/zenmap" "$D/uninstall.exe" "$D/ncat.exe" "$D/nping.exe" 2>/dev/null || true
-  # Npcap installer ships inside the Nmap installer; kept so the app can offer to install it.
+  # Npcap's licence forbids redistribution without an OEM licence: never ship its installer.
+  rm -f "$D"/npcap*.exe
+  ;;
+Linux)
+  # Static build so the AppImage/deb run on any distro without nmap installed.
+  curl -fsSL -o "$T/n.tar.bz2" "https://nmap.org/dist/nmap-$V.tar.bz2"
+  tar xjf "$T/n.tar.bz2" -C "$T"
+  (cd "$T/nmap-$V" && LDFLAGS="-static" ./configure --prefix="$T/out" --without-zenmap --without-ndiff \
+     --without-nping --without-ncat >/dev/null && make -j"$(nproc)" >/dev/null && make install >/dev/null)
+  rm -rf "$D"; mkdir -p "$D"
+  cp "$T/out/bin/nmap" "$D/nmap"; cp -R "$T/out/share/nmap/." "$D/"
+  cp "$T/nmap-$V/LICENSE" "$D/LICENSE"; cp -R "$T/nmap-$V/docs/licenses" "$D/licenses"
+  file "$D/nmap"
   ;;
 *) echo "No bundled nmap for $(uname -s); using system nmap." ;;
 esac

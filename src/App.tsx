@@ -1,6 +1,6 @@
 import { useCallback, useEffect, useMemo, useRef, useState } from "react";
 import { buildCommand, parseCommand, parseNmapXml, tokenize, type NmapOptions, type NmapResult } from "./nmap";
-import { cancelScan, detectNmap, onScanEvents, startScan, type DoneEvent, type NmapInfo, type OutputEvent } from "./ui/bridge";
+import { cancelScan, detectNmap, npcapMissing, onScanEvents, openNpcapPage, startScan, type DoneEvent, type NmapInfo, type OutputEvent } from "./ui/bridge";
 import { PRESETS, SCAN_TYPES, TIMINGS, applyFlags, invalidTarget, optionsKey, presetKey } from "./ui/presets";
 import { useStored, type HistoryItem, type Profile } from "./ui/store";
 import Results from "./results/Results";
@@ -48,6 +48,7 @@ export default function App() {
   const [welcomed, setWelcomed] = useStored("sd.welcomed", false);
   const [about, setAbout] = useState(false);
   const [copyMsg, setCopyMsg] = useState("");
+  const [noNpcap, setNoNpcap] = useState(false);
 
   const tabsRef = useRef(tabs);
   tabsRef.current = tabs;
@@ -57,6 +58,7 @@ export default function App() {
   const patch = useCallback((key: string, f: (t: Tab) => Tab) => setTabs((ts) => ts.map((t) => (t.key === key ? f(t) : t))), []);
 
   useEffect(() => { document.documentElement.dataset.theme = theme; }, [theme]);
+  useEffect(() => { npcapMissing().then(setNoNpcap).catch(() => {}); }, []);
   useEffect(() => { detectNmap().then(setNmap).catch(() => setNmap(null)); }, []);
 
   // Route scan events to their tab. Events can arrive before start_scan has returned the id, so buffer those.
@@ -285,7 +287,16 @@ export default function App() {
         <main className="main" key={tab.key}>
           <div className="sr" role="status">{statusText}</div>
           {openError && <div className="banner warn" role="alert"><span>{openError}</span><button className="link" onClick={() => setOpenError("")}>Dismiss</button></div>}
-          {nmap === null && (
+          {noNpcap && (
+            <div className="banner warn" role="alert">
+              <div>
+                <strong>Npcap is needed for scanning.</strong>
+                <p>Windows needs the free Npcap network driver before Pamn can scan. Install it from the Npcap website, then reopen Pamn.</p>
+              </div>
+              <button className="btn primary" onClick={() => openNpcapPage()}>Get Npcap</button>
+            </div>
+          )}
+          {nmap === null && !noNpcap && (
             <div className="banner warn" role="alert">
               <strong>nmap isn't installed.</strong> This app needs nmap to scan. Install it (for example <code>brew install nmap</code>) and reopen the app.
             </div>

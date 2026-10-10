@@ -78,6 +78,22 @@ fn detect_nmap(app: AppHandle, state: State<AppState>) -> Option<NmapInfo> {
     find_nmap(&app, &state).map(|(i, _)| i)
 }
 
+/// Windows only: nmap.exe cannot start without Npcap's wpcap.dll.
+#[tauri::command]
+fn npcap_missing() -> bool {
+    cfg!(windows) && {
+        let sys = PathBuf::from(std::env::var_os("WINDIR").unwrap_or_else(|| "C:\\Windows".into())).join("System32");
+        !sys.join("Npcap/wpcap.dll").exists() && !sys.join("wpcap.dll").exists()
+    }
+}
+
+/// Npcap's licence forbids redistributing the installer, so send the user to the official download page.
+#[tauri::command]
+fn open_npcap_page() {
+    #[cfg(windows)]
+    let _ = Command::new("explorer.exe").arg("https://npcap.com/#download").spawn();
+}
+
 #[tauri::command]
 fn set_nmap_path(path: Option<String>, state: State<AppState>) {
     *state.custom_path.lock().unwrap() = path.filter(|p| !p.is_empty()).map(PathBuf::from);
@@ -165,7 +181,7 @@ pub fn run() {
         .plugin(tauri_plugin_dialog::init())
         .plugin(tauri_plugin_fs::init())
         .manage(AppState::default())
-        .invoke_handler(tauri::generate_handler![detect_nmap, set_nmap_path, start_scan, cancel_scan])
+        .invoke_handler(tauri::generate_handler![detect_nmap, npcap_missing, open_npcap_page, set_nmap_path, start_scan, cancel_scan])
         .run(tauri::generate_context!())
         .expect("error while running tauri application");
 }
