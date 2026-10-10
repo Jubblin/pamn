@@ -87,6 +87,17 @@ fn npcap_missing() -> bool {
     }
 }
 
+/// Windows only: the 32-bit nmap.exe needs the x86 VC++ runtime (installed by the Pamn installer, but the user may have skipped it).
+#[tauri::command]
+fn vcruntime_missing() -> bool {
+    cfg!(windows) && {
+        let win = PathBuf::from(std::env::var_os("WINDIR").unwrap_or_else(|| "C:\\Windows".into()));
+        // 32-bit DLLs live in SysWOW64 on 64-bit Windows, System32 on 32-bit Windows.
+        let dir = if win.join("SysWOW64").is_dir() { win.join("SysWOW64") } else { win.join("System32") };
+        !dir.join("vcruntime140.dll").exists() || !dir.join("msvcp140.dll").exists()
+    }
+}
+
 /// Npcap's licence forbids redistributing the installer, so send the user to the official download page.
 #[tauri::command]
 fn open_npcap_page() {
@@ -181,7 +192,7 @@ pub fn run() {
         .plugin(tauri_plugin_dialog::init())
         .plugin(tauri_plugin_fs::init())
         .manage(AppState::default())
-        .invoke_handler(tauri::generate_handler![detect_nmap, npcap_missing, open_npcap_page, set_nmap_path, start_scan, cancel_scan])
+        .invoke_handler(tauri::generate_handler![detect_nmap, npcap_missing, vcruntime_missing, open_npcap_page, set_nmap_path, start_scan, cancel_scan])
         .run(tauri::generate_context!())
         .expect("error while running tauri application");
 }

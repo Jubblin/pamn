@@ -57,6 +57,35 @@ jobs:
           test -f src-tauri/resources/nmap/nmap.exe
           ! ls src-tauri/resources/nmap/npcap*.exe
           ls src-tauri/target/release/bundle/nsis/*.exe
+      - name: Verify nmap.exe runtime dependencies (Windows)
+        if: runner.os == 'Windows'
+        shell: bash
+        run: |
+          N=src-tauri/resources/nmap
+          test -f $N/vc_redist.x86.exe
+          # Install the bundled redistributable exactly as the NSIS hook does, then run nmap.exe.
+          rc=0; $N/vc_redist.x86.exe /install /quiet /norestart || rc=$?
+          case $rc in 0|1638|3010) ;; *) echo "vc_redist failed: $rc"; exit 1;; esac
+          # Every DLL nmap.exe and its sibling DLLs import must be bundled, a Windows system DLL,
+          # the UCRT api-set, the VC++ runtime (installed above), or Npcap (intentionally absent).
+          cd $N
+          pip install -q pefile
+          python - <<'PY'
+          import glob, os, pefile
+          sys32 = os.path.join(os.environ["WINDIR"], "SysWOW64")
+          local = {f.lower() for f in os.listdir(".")}
+          bad = []
+          for f in ["nmap.exe"] + glob.glob("*.dll"):
+              pe = pefile.PE(f)
+              for e in pe.DIRECTORY_ENTRY_IMPORT:
+                  d = e.dll.decode().lower()
+                  if d in ("wpcap.dll", "packet.dll") or d.startswith("api-ms-win-"): continue
+                  if d in local or os.path.exists(os.path.join(sys32, d)): continue
+                  bad.append((f, d))
+          print("missing:", bad)
+          raise SystemExit(1 if bad else 0)
+          PY
+          ./nmap.exe --version
       - uses: actions/upload-artifact@v4
         with:
           name: pamn-${{ matrix.os }}

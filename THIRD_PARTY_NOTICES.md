@@ -17,6 +17,12 @@ also has no silent mode. So the Windows build strips Npcap from the Nmap install
 installer offers to open https://npcap.com/#download when Npcap is absent, and the app shows a
 "Npcap is needed for scanning" banner with the same link. Each user downloads Npcap themselves under its licence.
 
+## Microsoft Visual C++ Redistributable (Windows)
+nmap.exe (32-bit) imports VCRUNTIME140.dll and MSVCP140.dll. Pamn bundles Microsoft's unmodified
+`vc_redist.x86.exe` (taken from the official Nmap installer), which Microsoft permits applications to
+redistribute under its redistributable licence terms, and the Pamn installer runs it silently only if the
+x86 runtime is not already installed. If setup was skipped, the app shows a "Visual C++ runtime is missing" banner.
+
 ## Linux
 A static Nmap built unmodified from the official source tarball by `scripts/fetch-nmap.sh` is bundled
 (AppImage and .deb); no system nmap is needed.

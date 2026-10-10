@@ -48,6 +48,7 @@ const mock = (() => {
 })();
 
 export const npcapMissing = (): Promise<boolean> => (inTauri ? invoke<boolean>("npcap_missing") : Promise.resolve(false));
+export const vcruntimeMissing = (): Promise<boolean> => (inTauri ? invoke<boolean>("vcruntime_missing") : Promise.resolve(false));
 export const openNpcapPage = (): Promise<void> => (inTauri ? invoke<void>("open_npcap_page") : Promise.resolve());
 export const detectNmap = (): Promise<NmapInfo> =>
   inTauri ? invoke<NmapInfo>("detect_nmap") : Promise.resolve({ path: "/usr/local/bin/nmap", version: "Nmap version 7.95 (demo)", source: "demo" });

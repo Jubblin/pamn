@@ -1,6 +1,6 @@
 #!/usr/bin/env bash
 # Populate src-tauri/resources/nmap with the official Nmap build for this OS.
-# Linux: static nmap built from the official source tarball. Windows: official installer contents (Npcap removed).
+# Linux: static nmap built from the official source tarball. Windows: official installer contents (Npcap removed, VC++ redistributable kept).
 set -euo pipefail
 V=7.991
 D="$(cd "$(dirname "$0")/.." && pwd)/src-tauri/resources/nmap"
@@ -28,6 +28,9 @@ MINGW*|MSYS*|CYGWIN*)
   7z x -y -o"$T/x" "$T/n.exe" >/dev/null
   rm -rf "$D"; mkdir -p "$D"
   cp -R "$T/x/." "$D/"
+  # nmap.exe is 32-bit and needs the x86 VC++ 2015-2022 runtime; keep Microsoft's redistributable
+  # (freely redistributable) so the Pamn installer can run it silently when the runtime is missing.
+  cp "$T/x/\$PLUGINSDIR/vc_redist.x86.exe" "$D/vc_redist.x86.exe"
   rm -rf "$D/\$PLUGINSDIR" "$D/zenmap" "$D/uninstall.exe" "$D/ncat.exe" "$D/nping.exe" 2>/dev/null || true
   # Npcap's licence forbids redistribution without an OEM licence: never ship its installer.
   rm -f "$D"/npcap*.exe

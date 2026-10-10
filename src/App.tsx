@@ -1,6 +1,6 @@
 import { useCallback, useEffect, useMemo, useRef, useState } from "react";
 import { buildCommand, parseCommand, parseNmapXml, tokenize, type NmapOptions, type NmapResult } from "./nmap";
-import { cancelScan, detectNmap, npcapMissing, onScanEvents, openNpcapPage, startScan, type DoneEvent, type NmapInfo, type OutputEvent } from "./ui/bridge";
+import { cancelScan, detectNmap, npcapMissing, onScanEvents, openNpcapPage, startScan, vcruntimeMissing, type DoneEvent, type NmapInfo, type OutputEvent } from "./ui/bridge";
 import { PRESETS, SCAN_TYPES, TIMINGS, applyFlags, invalidTarget, optionsKey, presetKey } from "./ui/presets";
 import { useStored, type HistoryItem, type Profile } from "./ui/store";
 import Results from "./results/Results";
@@ -49,6 +49,7 @@ export default function App() {
   const [about, setAbout] = useState(false);
   const [copyMsg, setCopyMsg] = useState("");
   const [noNpcap, setNoNpcap] = useState(false);
+  const [noVc, setNoVc] = useState(false);
 
   const tabsRef = useRef(tabs);
   tabsRef.current = tabs;
@@ -59,6 +60,7 @@ export default function App() {
 
   useEffect(() => { document.documentElement.dataset.theme = theme; }, [theme]);
   useEffect(() => { npcapMissing().then(setNoNpcap).catch(() => {}); }, []);
+  useEffect(() => { vcruntimeMissing().then(setNoVc).catch(() => {}); }, []);
   useEffect(() => { detectNmap().then(setNmap).catch(() => setNmap(null)); }, []);
 
   // Route scan events to their tab. Events can arrive before start_scan has returned the id, so buffer those.
@@ -294,6 +296,14 @@ export default function App() {
                 <p>Windows needs the free Npcap network driver before Pamn can scan. Install it from the Npcap website, then reopen Pamn.</p>
               </div>
               <button className="btn primary" onClick={() => openNpcapPage()}>Get Npcap</button>
+            </div>
+          )}
+          {noVc && (
+            <div className="banner warn" role="alert">
+              <div>
+                <strong>The Visual C++ runtime is missing.</strong>
+                <p>Scanning needs Microsoft's free Visual C++ runtime (x86). Reinstall Pamn and let setup finish, or run <code>vc_redist.x86.exe</code> from Pamn's <code>nmap</code> folder, then reopen Pamn.</p>
+              </div>
             </div>
           )}
           {nmap === null && !noNpcap && (
