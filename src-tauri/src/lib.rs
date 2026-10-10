@@ -119,7 +119,7 @@ fn start_scan(app: AppHandle, state: State<AppState>, args: Vec<String>) -> Resu
     validate(&args)?;
     let (info, dir) = find_nmap(&app, &state).ok_or("nmap not found")?;
     let id = state.next_id.fetch_add(1, Ordering::SeqCst) + 1;
-    let xml_path = std::env::temp_dir().join(format!("small-desktop-scan-{}-{id}.xml", std::process::id()));
+    let xml_path = std::env::temp_dir().join(format!("pamn-scan-{}-{id}.xml", std::process::id()));
 
     // Argv array, no shell.
     let mut cmd = Command::new(&info.path);

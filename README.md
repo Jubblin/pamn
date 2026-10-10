@@ -1,4 +1,4 @@
-# Small Desktop
+# Pamn
 
 Tauri 2 + React + TypeScript desktop GUI around nmap.
 

@@ -1,5 +1,5 @@
 [package]
-name = "small-desktop"
+name = "pamn"
 version = "0.1.0"
 edition = "2021"
 
@@ -14,5 +14,5 @@ tauri-plugin-dialog = "2"
 tauri-plugin-fs = "2"
 
 [lib]
-name = "small_desktop_lib"
+name = "pamn_lib"
 crate-type = ["staticlib", "cdylib", "rlib"]

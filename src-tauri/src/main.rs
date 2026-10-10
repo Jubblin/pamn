@@ -1,3 +1,3 @@
 fn main() {
-    small_desktop_lib::run()
+    pamn_lib::run()
 }

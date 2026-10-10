@@ -1,4 +1,4 @@
-import { Fragment, useMemo, useState } from "react";
+import { Fragment, useEffect, useMemo, useRef, useState } from "react";
 import type { Host, NmapResult } from "../nmap";
 import Compare, { type Other } from "./Compare";
 import { download } from "./files";
@@ -20,6 +20,12 @@ export default function Results({ result, live, xml, name, others }: Props) {
   const upHosts = useMemo(() => result.hosts.filter((h) => h.status === "up"), [result.hosts]);
   const selected = result.hosts.find((h) => h.addr === sel && hosts.includes(h)) ?? hosts[0];
   const set = <K extends keyof Filters>(k: K, v: Filters[K]) => setF((x) => ({ ...x, [k]: v }));
+  const menu = useRef<HTMLDetailsElement>(null);
+  useEffect(() => {
+    const close = (e: Event) => { const m = menu.current; if (m?.open && !m.contains(e.target as Node)) m.open = false; };
+    document.addEventListener("pointerdown", close);
+    return () => document.removeEventListener("pointerdown", close);
+  }, []);
   const base = name.replace(/[^\w.-]+/g, "_") || "scan";
   const pick = (addr: string) => { setSel(addr); setF((x) => ({ ...x, status: "all", text: "", openOnly: false, port: "", service: "", os: "" })); setView("hosts"); };
 
@@ -31,9 +37,11 @@ export default function Results({ result, live, xml, name, others }: Props) {
         </div>
         {live && <span className="live"><i />Live — updating as devices finish</span>}
         <div className="res-actions">
-          <details className="menu">
+          <details className="menu" ref={menu}
+            onToggle={(e) => { if (e.currentTarget.open) e.currentTarget.querySelector<HTMLButtonElement>(".menu-pop button:not(:disabled)")?.focus(); }}
+            onKeyDown={(e) => { if (e.key === "Escape" && e.currentTarget.open) { e.currentTarget.open = false; e.currentTarget.querySelector("summary")?.focus(); } }}>
             <summary className="btn sm" aria-label="Save or export">Save / export ▾</summary>
-            <div className="menu-pop" onClick={(e) => (e.currentTarget.parentElement as HTMLDetailsElement).open = false}>
+            <div className="menu-pop" role="group" aria-label="Export format" onClick={(e) => { const d = e.currentTarget.parentElement as HTMLDetailsElement; d.open = false; d.querySelector("summary")?.focus(); }}>
               <button disabled={!xml} title={xml ? "" : "XML is available once the scan finishes"} onClick={() => xml && download(`${base}.xml`, xml, "text/xml")}>Nmap XML (.xml)</button>
               <button onClick={() => download(`${base}.csv`, toCsv(result), "text/csv")}>Spreadsheet (.csv)</button>
               <button onClick={() => download(`${base}.json`, toJson(result), "application/json")}>JSON (.json)</button>
