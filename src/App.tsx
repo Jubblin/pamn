@@ -3,12 +3,14 @@ import { buildCommand, parseCommand, parseNmapXml, tokenize, type NmapOptions, t
 import { cancelScan, detectNmap, onScanEvents, startScan, type DoneEvent, type NmapInfo, type OutputEvent } from "./ui/bridge";
 import { PRESETS, SCAN_TYPES, TIMINGS, applyFlags, invalidTarget, optionsKey, presetKey } from "./ui/presets";
 import { useStored, type HistoryItem, type Profile } from "./ui/store";
+import Results from "./results/Results";
+import { parseLive } from "./results/model";
 
 type Status = "idle" | "running" | "done" | "error" | "cancelled";
 interface Tab {
   key: string; cmd: string; targetText: string; status: Status;
   scanId?: number; log: string[]; pct?: number; remaining?: string; startedAt?: number;
-  result?: NmapResult; message?: string; needsPrivs?: boolean; cancelling?: boolean;
+  result?: NmapResult; xml?: string; message?: string; needsPrivs?: boolean; cancelling?: boolean;
 }
 
 let keySeq = 0;
@@ -69,7 +71,7 @@ export default function App() {
       try { result = e.xml ? parseNmapXml(e.xml) : undefined; } catch { /* no usable XML */ }
       const needsPrivs = e.code !== 0 && !t.cancelling && t.log.some((l) => PRIV.test(l));
       const status: Status = t.cancelling || e.code === null ? "cancelled" : e.code === 0 ? "done" : "error";
-      return { ...t, status, result, needsPrivs, pct: status === "done" ? 100 : t.pct, scanId: undefined,
+      return { ...t, status, result, xml: e.xml || undefined, needsPrivs, pct: status === "done" ? 100 : t.pct, scanId: undefined,
         message: status === "error" ? (needsPrivs ? undefined : t.log.filter((l) => l.trim()).slice(-1)[0] ?? "The scan failed.") : undefined };
     }),
   ), [route, saveHistory]);
@@ -102,7 +104,7 @@ export default function App() {
     const key = tab.key;
     const args = tokenize(cmd).slice(1);
     if (!args.includes("--stats-every")) args.push("--stats-every", "1s");
-    patch(key, (t) => ({ ...t, status: "running", log: [], pct: undefined, remaining: undefined, result: undefined, message: undefined, needsPrivs: false, cancelling: false, startedAt: Date.now() }));
+    patch(key, (t) => ({ ...t, status: "running", log: [], pct: undefined, remaining: undefined, result: undefined, xml: undefined, message: undefined, needsPrivs: false, cancelling: false, startedAt: Date.now() }));
     try {
       const id = await startScan(args);
       patch(key, (t) => ({ ...t, scanId: id }));
@@ -138,6 +140,24 @@ export default function App() {
     if (key === active) setActive(rest[Math.max(0, tabs.findIndex((x) => x.key === key) - 1)].key);
   };
 
+  const [openError, setOpenError] = useState("");
+  const openFile = async (f?: File) => {
+    if (!f) return;
+    try {
+      const xml = await f.text();
+      const result = parseNmapXml(xml);
+      const cmd = result.args.startsWith("nmap") ? result.args : "nmap " + result.args;
+      const t: Tab = { ...newTab(cmd, parseCommand(cmd).targets.join(" ") || f.name), status: "done", result, xml, pct: 100 };
+      setTabs((ts) => [...ts, t]);
+      setActive(t.key);
+      setOpenError("");
+    } catch (err) { setOpenError(`Couldn't open ${f.name}: ${err instanceof Error ? err.message : err}`); }
+  };
+  const fileInput = useRef<HTMLInputElement>(null);
+  const live = useMemo(() => (running ? parseLive(tab.log) : undefined), [running, tab.log]);
+  const shown = running ? live : tab.result;
+  const others = tabs.filter((t) => t.key !== tab.key && t.result).map((t) => ({ label: `${tabTitle(t)} — ${t.cmd}`, result: t.result! }));
+
   const saveProfile = (name: string) => {
     const flags = optionsKey(opts).replace(/^nmap\s*/, "");
     setProfiles((p) => [...p, { id: String(Date.now()), name, flags }]);
@@ -171,6 +191,8 @@ export default function App() {
           <span className={"chip " + (nmap ? "ok" : nmap === null ? "warn" : "")} title={nmap?.path}>
             {nmap === undefined ? "Looking for nmap…" : nmap ? nmap.version.replace(/^Nmap version /, "nmap ").replace(/ \(.*$/, "") : "nmap not found"}
           </span>
+          <button className="btn sm" onClick={() => fileInput.current?.click()} title="Open a saved nmap XML file">Open…</button>
+          <input ref={fileInput} type="file" accept=".xml,text/xml" hidden onChange={(e) => { openFile(e.target.files?.[0]); e.target.value = ""; }} />
           <button className="icon-btn" aria-label={`Theme: ${theme}. Click to change`} title={`Theme: ${theme}`}
             onClick={() => setTheme(theme === "system" ? "light" : theme === "light" ? "dark" : "system")}>
             {theme === "dark" ? "☾" : theme === "light" ? "☀" : "◐"}
@@ -211,6 +233,7 @@ export default function App() {
         </aside>
 
         <main className="main" key={tab.key}>
+          {openError && <div className="banner warn" role="alert"><span>{openError}</span><button className="link" onClick={() => setOpenError("")}>Dismiss</button></div>}
           {nmap === null && (
             <div className="banner warn" role="alert">
               <strong>nmap isn't installed.</strong> This app needs nmap to scan. Install it (for example <code>brew install nmap</code>) and reopen the app.
@@ -257,26 +280,14 @@ export default function App() {
                 <div className={"fill " + tab.status} style={{ width: `${tab.status === "done" ? 100 : tab.pct ?? 0}%` }} />
               </div>
               {running && <p className="muted small">{tab.pct === undefined ? "Starting up — progress appears once nmap has something to estimate." : `${Math.round(tab.pct)}% done`}</p>}
-              {tab.result && tab.result.hosts.some((h) => h.status === "up") && (
-                <table className="results">
-                  <thead><tr><th>Device</th><th>Open ports</th></tr></thead>
-                  <tbody>
-                    {tab.result.hosts.filter((h) => h.status === "up").map((h) => (
-                      <tr key={h.addr}>
-                        <td><strong>{h.hostnames[0] ?? h.addr}</strong>{h.hostnames[0] && <div className="muted small">{h.addr}</div>}</td>
-                        <td>{h.ports.filter((p) => p.state === "open").map((p) => <span className="pill" key={p.protocol + p.port}>{p.port}{p.service?.name ? ` · ${p.service.name}` : ""}</span>)}
-                          {!h.ports.some((p) => p.state === "open") && <span className="muted small">none found</span>}</td>
-                      </tr>
-                    ))}
-                  </tbody>
-                </table>
-              )}
-              <div className="drawer">
+              {(running || tab.log.length > 0) && <div className="drawer">
                 <button className="link" aria-expanded={showLog} onClick={() => setShowLog(!showLog)}>{showLog ? "▾" : "▸"} Live output</button>
                 {showLog && <pre ref={logRef} className="log" tabIndex={0} aria-label="nmap output">{tab.log.join("\n") || "Waiting for output…"}</pre>}
-              </div>
+              </div>}
             </section>
           )}
+          {shown && (shown.hosts.length > 0 || tab.status === "done") && <Results result={shown} live={running} xml={tab.xml} name={tabTitle(tab)} others={others} />}
+
           <section className="card" aria-labelledby="presets-h">
             <div className="h-row"><h2 id="presets-h">Type of scan</h2></div>
             <div className="presets" role="radiogroup" aria-labelledby="presets-h">
