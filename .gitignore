@@ -29,3 +29,7 @@ npm-debug.log*
 # Rust
 src-tauri/target/
 src-tauri/gen/
+
+# Fetched by scripts/fetch-nmap.sh
+src-tauri/resources/nmap/*
+!src-tauri/resources/nmap/.gitkeep

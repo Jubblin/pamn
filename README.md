@@ -22,3 +22,11 @@ cd src-tauri && cargo check && cargo clippy
 `detect_nmap`, `set_nmap_path(path)`, `start_scan(args) -> id`, `cancel_scan(id)`.
 Events: `scan-output {id, stream, line}` (stdout/stderr, incl. `--stats-every` progress), `scan-done {id, code, xml}`.
 Args go straight to nmap as argv (no shell); `-o*` flags are rejected since the app owns `-oX`.
+
+## Packaging / CI
+`scripts/fetch-nmap.sh` downloads the official Nmap 7.991 build for the current OS into
+`src-tauri/resources/nmap/` (macOS: x86_64 build, runs on Apple silicon via Rosetta; Windows: extracted
+from the installer, includes the Npcap installer; Linux: nothing bundled, the `.deb` depends on `nmap`).
+`.github/workflows/build.yml` runs it and `tauri build` on macOS (arm64 + x64), Windows and Linux.
+Bundled Nmap is NPSL and Npcap has its own license (non-commercial free edition) — see `THIRD_PARTY_NOTICES.md`.
+Code signing/notarization is not configured.
