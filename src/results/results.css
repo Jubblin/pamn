@@ -67,13 +67,13 @@
 .topo-scroll { overflow: auto; padding: 8px 16px 16px; max-height: 620px; }
 .edge { fill: none; stroke: var(--border); stroke-width: 1.6; }
 .edge.dashed { stroke-dasharray: 4 4; }
-.node rect { fill: var(--surface-2); stroke: var(--border); }
+.node rect { fill: var(--surface-2); stroke: var(--border-strong); }
 .node.you rect { fill: var(--accent-soft); stroke: var(--accent); }
 .node.host rect { fill: var(--ok-soft); stroke: color-mix(in srgb, var(--ok) 50%, transparent); }
 .node.host { cursor: pointer; } .node.host:hover rect, .node.host:focus-visible rect { stroke: var(--ok); stroke-width: 2; }
 .node.unknown rect { stroke-dasharray: 4 3; }
 .node text { fill: var(--text); } .n-main { font-size: 12.5px; font-weight: 600; } .n-sub { font-size: 10.5px; fill: var(--muted) !important; }
-.node:focus { outline: none; }
+.node:focus-visible { outline: none; } .node.host:focus-visible rect { stroke: var(--accent); stroke-width: 3; }
 .legend { display: flex; gap: 16px; margin-top: 10px; font-size: 12px; color: var(--muted); }
 .sw { display: inline-block; width: 10px; height: 10px; border-radius: 3px; margin-right: 6px; border: 1px solid var(--border); background: var(--surface-2); }
 .sw.you { background: var(--accent-soft); border-color: var(--accent); } .sw.host { background: var(--ok-soft); border-color: var(--ok); }

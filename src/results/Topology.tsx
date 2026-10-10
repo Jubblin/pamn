@@ -14,7 +14,7 @@ export default function Topology({ hosts, onPick }: { hosts: Host[]; onPick: (ad
   const height = Math.max(...t.nodes.map((n) => y(n.y))) + H + PAD;
   return (
     <div className="topo-scroll">
-      <svg width={x(t.maxDepth) + W + PAD} height={height} role="img" aria-label="Network route map">
+      <svg width={x(t.maxDepth) + W + PAD} height={height} role="group" aria-label="Network route map. The same routes are listed per device under Devices.">
         {t.nodes.filter((n) => n.parent).map((n) => {
           const p = byId.get(n.parent!)!;
           const x1 = x(p.depth) + W, y1 = y(p.y) + H / 2, x2 = x(n.depth), y2 = y(n.y) + H / 2, mx = (x1 + x2) / 2;
@@ -23,7 +23,7 @@ export default function Topology({ hosts, onPick }: { hosts: Host[]; onPick: (ad
         {t.nodes.map((n) => (
           <g key={n.id} className={"node " + n.kind} transform={`translate(${x(n.depth)},${y(n.y)})`}
             tabIndex={n.kind === "host" ? 0 : undefined} role={n.kind === "host" ? "button" : undefined}
-            onClick={() => n.kind === "host" && onPick(n.id)} onKeyDown={(e) => n.kind === "host" && e.key === "Enter" && onPick(n.id)}>
+            onClick={() => n.kind === "host" && onPick(n.id)} onKeyDown={(e) => n.kind === "host" && (e.key === "Enter" || e.key === " ") && (e.preventDefault(), onPick(n.id))}>
             <title>{n.sub ? `${n.label} (${n.sub})` : n.label}</title>
             <rect width={W} height={H} rx={9} />
             <text x={10} y={n.sub ? 16 : 24} className="n-main">{clip(n.label)}</text>

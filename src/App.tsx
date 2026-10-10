@@ -4,6 +4,8 @@ import { cancelScan, detectNmap, onScanEvents, startScan, type DoneEvent, type N
 import { PRESETS, SCAN_TYPES, TIMINGS, applyFlags, invalidTarget, optionsKey, presetKey } from "./ui/presets";
 import { useStored, type HistoryItem, type Profile } from "./ui/store";
 import Results from "./results/Results";
+import Palette, { type PaletteItem } from "./ui/Palette";
+import { rovingKeys } from "./ui/roving";
 import { parseLive } from "./results/model";
 
 type Status = "idle" | "running" | "done" | "error" | "cancelled";
@@ -18,6 +20,9 @@ const newTab = (cmd = "nmap -T4 -F", targetText = ""): Tab => ({ key: `t${++keyS
 const PROGRESS = /About\s+([\d.]+)% done(?:; ETC: [^(]*\((\S+) remaining\))?/;
 const PRIV = /root privileges|requires root|Operation not permitted|permission denied|administrator/i;
 
+const GLYPH: Record<Status, string> = { idle: "○", running: "●", done: "✓", error: "✕", cancelled: "–" };
+const STATUS_WORD: Record<Status, string> = { idle: "", running: "scanning", done: "done", error: "failed", cancelled: "cancelled" };
+const MOD = typeof navigator !== "undefined" && /Mac/i.test(navigator.platform) ? "⌘" : "Ctrl+";
 const tabTitle = (t: Tab) => t.targetText.trim() || "New scan";
 const dedupeTargets = (o: NmapOptions, text: string): NmapOptions => ({ ...o, targets: tokenize(text) });
 
@@ -38,6 +43,8 @@ export default function App() {
   const [showOptions, setShowOptions] = useState(false);
   const [showLog, setShowLog] = useState(true);
   const [naming, setNaming] = useState<string | null>(null);
+  const [palette, setPalette] = useState(false);
+  const [copyMsg, setCopyMsg] = useState("");
 
   const tabsRef = useRef(tabs);
   tabsRef.current = tabs;
@@ -58,7 +65,7 @@ export default function App() {
 
   const saveHistory = useCallback((t: Tab, status: HistoryItem["status"], result?: NmapResult) => {
     const item: HistoryItem = { id: `${Date.now()}-${t.key}`, cmd: t.cmd, at: Date.now(), status, summary: status === "done" ? summarize(result) : status === "cancelled" ? "Cancelled" : "Failed" };
-    setHistory((h) => [item, ...h].slice(0, 50));
+    setHistory((h) => [item, ...h.filter((x) => x.cmd !== item.cmd)].slice(0, 50));
   }, [setHistory]);
 
   useEffect(() => onScanEvents(
@@ -170,17 +177,55 @@ export default function App() {
   const canRun = !!nmap && !running && !noTarget && !bad;
   const hint = !nmap && nmap !== undefined ? "nmap wasn't found" : noTarget ? "Enter a target to scan" : bad ? `"${bad}" doesn't look like a valid target` : "";
 
+  const act = useRef({ run, cancel, canRun, running, cancelling: !!tab.cancelling });
+  act.current = { run, cancel, canRun, running, cancelling: !!tab.cancelling };
+  useEffect(() => {
+    const onKey = (e: KeyboardEvent) => {
+      const mod = e.metaKey || e.ctrlKey;
+      if (mod && e.key === "Enter") { e.preventDefault(); if (act.current.canRun) act.current.run(); }
+      else if (mod && e.key.toLowerCase() === "k") { e.preventDefault(); setPalette(true); }
+      else if (e.key === "Escape" && act.current.running && !act.current.cancelling) { act.current.cancel(); }
+    };
+    window.addEventListener("keydown", onKey);
+    return () => window.removeEventListener("keydown", onKey);
+  }, []);
+
+  const goPreset = (flags: string) => {
+    const cmd = applyFlags(tab.cmd, flags);
+    patch(tab.key, (t) => ({ ...t, cmd }));
+    const targets = parseCommand(cmd).targets;
+    if (targets.length && !invalidTarget(targets)) run(cmd); else document.getElementById("target")?.focus();
+  };
+  const paletteItems: PaletteItem[] = [
+    ...(running || !nmap ? [] : PRESETS.map((p) => ({ id: "run-" + p.id, label: `Run: ${p.name}`, hint: p.flags, run: () => goPreset(p.flags) }))),
+    { id: "open", label: "Open saved scan file…", run: () => fileInput.current?.click() },
+    ...(["system", "light", "dark"] as const).map((t) => ({ id: "theme-" + t, label: `Theme: ${t[0].toUpperCase() + t.slice(1)}`, hint: theme === t ? "current" : undefined, run: () => setTheme(t) })),
+  ];
+
+  const copyCmd = async () => {
+    try {
+      if (!navigator.clipboard) throw new Error("no clipboard");
+      await navigator.clipboard.writeText(tab.cmd);
+      setCopyMsg("Copied ✓");
+    } catch { setCopyMsg("Couldn't copy. Select the command and copy it manually."); }
+    setTimeout(() => setCopyMsg(""), 2500);
+  };
+  const statusText = tab.status === "running" ? (tab.cancelling ? "Stopping scan" : tab.pct === undefined ? "Scanning" : `Scanning, ${Math.floor(tab.pct / 10) * 10}%`)
+    : tab.status === "done" ? `Scan complete: ${summarize(tab.result)}` : tab.status === "error" ? "Scan failed" : tab.status === "cancelled" ? "Scan cancelled" : "";
+
   return (
     <div className="app">
       <header className="topbar">
-        <div className="brand"><span className="logo" aria-hidden>◎</span> Small Desktop</div>
-        <div role="tablist" aria-label="Scans" className="tabs">
+        <h1 className="sr">Pamn</h1>
+        <div className="brand" aria-hidden><span className="logo">◎</span> Pamn</div>
+        <div role="group" aria-label="Scans" className="tabs">
           {tabs.map((t) => (
             <div key={t.key} className={"tab" + (t.key === active ? " on" : "")}>
-              <button role="tab" aria-selected={t.key === active} className="tab-btn" onClick={() => setActive(t.key)}>
-                <span className={"dot " + t.status} aria-hidden />
+              <button aria-current={t.key === active ? "true" : undefined} className="tab-btn" onClick={() => setActive(t.key)}>
+                <span className={"st " + t.status} aria-hidden>{GLYPH[t.status]}</span>
                 <span className="tab-title">{tabTitle(t)}</span>
-                {t.status === "running" && t.pct !== undefined && <span className="tab-pct">{Math.round(t.pct)}%</span>}
+                {t.status === "running" && t.pct !== undefined && <span className="tab-pct" aria-hidden>{Math.round(t.pct)}%</span>}
+                {t.status !== "idle" && <span className="sr"> ({STATUS_WORD[t.status]}{t.status === "running" && t.pct !== undefined ? ` ${Math.round(t.pct)}%` : ""})</span>}
               </button>
               <button className="icon-btn sm" aria-label={`Close ${tabTitle(t)}`} onClick={() => closeTab(t.key)}>×</button>
             </div>
@@ -188,7 +233,7 @@ export default function App() {
           <button className="icon-btn" aria-label="New scan" title="New scan" onClick={() => addTab()}>＋</button>
         </div>
         <div className="top-right">
-          <span className={"chip " + (nmap ? "ok" : nmap === null ? "warn" : "")} title={nmap?.path}>
+          <span role="status" className={"chip " + (nmap ? "ok" : nmap === null ? "warn" : "")} title={nmap?.path}>
             {nmap === undefined ? "Looking for nmap…" : nmap ? nmap.version.replace(/^Nmap version /, "nmap ").replace(/ \(.*$/, "") : "nmap not found"}
           </span>
           <button className="btn sm" onClick={() => fileInput.current?.click()} title="Open a saved nmap XML file">Open…</button>
@@ -224,7 +269,7 @@ export default function App() {
                 <li key={h.id}>
                   <button className="list-btn" onClick={() => addTab(h.cmd)} title={h.cmd}>
                     <span className="hist-target">{parseCommand(h.cmd).targets.join(" ") || "scan"}</span>
-                    <small>{new Date(h.at).toLocaleString([], { month: "short", day: "numeric", hour: "2-digit", minute: "2-digit" })} · {h.summary}</small>
+                    <small>{new Date(h.at).toLocaleString([], { month: "short", day: "numeric", hour: "2-digit", minute: "2-digit" })} · {PRESETS.find((p) => presetKey(p) === optionsKey(parseCommand(h.cmd)))?.name ?? "Custom"} · {h.summary}</small>
                   </button>
                 </li>
               ))}
@@ -233,6 +278,7 @@ export default function App() {
         </aside>
 
         <main className="main" key={tab.key}>
+          <div className="sr" role="status">{statusText}</div>
           {openError && <div className="banner warn" role="alert"><span>{openError}</span><button className="link" onClick={() => setOpenError("")}>Dismiss</button></div>}
           {nmap === null && (
             <div className="banner warn" role="alert">
@@ -240,19 +286,20 @@ export default function App() {
             </div>
           )}
 
-          <section className="card">
-            <label htmlFor="target" className="label">What do you want to scan?</label>
+          <section className="card sticky">
+            <h2><label htmlFor="target" className="label">What do you want to scan?</label></h2>
             <div className="target-row">
               <input id="target" className={"input big" + (bad ? " invalid" : "")} value={tab.targetText} placeholder="scanme.nmap.org, 192.168.1.0/24 or 10.0.0.1-50"
                 autoFocus spellCheck={false} autoComplete="off" aria-invalid={!!bad} aria-describedby="target-help" disabled={running}
-                onChange={(e) => setTarget(e.target.value)} onKeyDown={(e) => e.key === "Enter" && canRun && run()} />
+                onChange={(e) => setTarget(e.target.value)} onKeyDown={(e) => e.key === "Enter" && !e.metaKey && !e.ctrlKey && canRun && run()} />
               {running
-                ? <button className="btn danger" onClick={cancel} disabled={tab.cancelling}>{tab.cancelling ? "Stopping…" : "Cancel"}</button>
-                : <button className="btn primary" onClick={() => run()} disabled={!canRun} title={hint}>Scan</button>}
+                ? <button className="btn danger" onClick={cancel} disabled={tab.cancelling} aria-keyshortcuts="Escape" title="Cancel scan (Esc)">{tab.cancelling ? "Stopping…" : "Cancel"}</button>
+                : <button className="btn primary" onClick={() => canRun && run()} aria-disabled={!canRun} aria-describedby="target-help" aria-keyshortcuts="Control+Enter Meta+Enter" title={hint || `Scan (${MOD}↵)`}>Scan</button>}
             </div>
             <p id="target-help" className={"help" + (bad ? " err" : "")}>
               {bad ? hint : "A website, an IP address, a whole network (192.168.1.0/24) or a range. Separate several with spaces."}
               {!bad && hint && !noTarget && <span> {hint}.</span>}
+              {" "}<span className="kbd">{MOD}↵ scan · {MOD}K commands</span>
             </p>
             <p className="warn-note">Only scan networks you own or have permission to test.</p>
           </section>
@@ -269,7 +316,7 @@ export default function App() {
           {tab.status === "error" && !tab.needsPrivs && <div className="banner warn" role="alert"><strong>The scan didn't finish.</strong> {tab.message}</div>}
 
           {(tab.status !== "idle") && (
-            <section className="card" aria-live="polite">
+            <section className="card">
               <div className="h-row">
                 <h2>{running ? (tab.cancelling ? "Stopping…" : "Scanning…") : tab.status === "done" ? "Scan complete" : tab.status === "cancelled" ? "Scan cancelled" : "Stopped"}</h2>
                 {running && tab.remaining && <span className="muted small">about {tab.remaining} left</span>}
@@ -281,18 +328,18 @@ export default function App() {
               </div>
               {running && <p className="muted small">{tab.pct === undefined ? "Starting up — progress appears once nmap has something to estimate." : `${Math.round(tab.pct)}% done`}</p>}
               {(running || tab.log.length > 0) && <div className="drawer">
-                <button className="link" aria-expanded={showLog} onClick={() => setShowLog(!showLog)}>{showLog ? "▾" : "▸"} Live output</button>
-                {showLog && <pre ref={logRef} className="log" tabIndex={0} aria-label="nmap output">{tab.log.join("\n") || "Waiting for output…"}</pre>}
+                <button className="link" aria-expanded={showLog} onClick={() => setShowLog(!showLog)}><span className="chev" aria-hidden />Live output</button>
+                {showLog && <pre ref={logRef} className="log" tabIndex={0} role="log" aria-live="off" aria-label="nmap output">{tab.log.join("\n") || "Waiting for output…"}</pre>}
               </div>}
             </section>
           )}
           {shown && (shown.hosts.length > 0 || tab.status === "done") && <Results result={shown} live={running} xml={tab.xml} name={tabTitle(tab)} others={others} />}
 
           <section className="card" aria-labelledby="presets-h">
-            <div className="h-row"><h2 id="presets-h">Type of scan</h2></div>
-            <div className="presets" role="radiogroup" aria-labelledby="presets-h">
-              {PRESETS.map((p) => (
-                <button key={p.id} role="radio" aria-checked={activePreset === p.id} className={"preset" + (activePreset === p.id ? " on" : "")} disabled={running}
+            <div className="h-row"><h2 id="presets-h">Type of scan</h2>{matchedProfile ? <span className="badge">Profile: {matchedProfile.name}</span> : !activePreset && <span className="badge">Custom settings</span>}</div>
+            <div className="presets" role="radiogroup" aria-labelledby="presets-h" onKeyDown={rovingKeys}>
+              {PRESETS.map((p, i) => (
+                <button key={p.id} role="radio" aria-checked={activePreset === p.id} tabIndex={activePreset === p.id || (!activePreset && i === 0) ? 0 : -1} className={"preset" + (activePreset === p.id ? " on" : "")} disabled={running}
                   onClick={() => patch(tab.key, (t) => ({ ...t, cmd: applyFlags(t.cmd, p.flags) }))}>
                   <span className="preset-ico" aria-hidden>{p.icon}</span>
                   <span className="preset-name">{p.name}</span>
@@ -301,13 +348,11 @@ export default function App() {
               ))}
             </div>
             <div className="h-row below">
-              <button className="link" aria-expanded={showOptions} onClick={() => setShowOptions(!showOptions)}>{showOptions ? "▾" : "▸"} Fine-tune options</button>
-              {!activePreset && !matchedProfile && <span className="muted small">Custom settings</span>}
-              {matchedProfile && <span className="muted small">Profile: {matchedProfile.name}</span>}
+              <button className="link" aria-expanded={showOptions} onClick={() => setShowOptions(!showOptions)}><span className="chev" aria-hidden />Fine-tune options</button>
               {!matchedProfile && (naming === null
                 ? <button className="link" onClick={() => setNaming("")}>Save as profile…</button>
                 : <form className="inline-form" onSubmit={(e) => { e.preventDefault(); if (naming.trim()) saveProfile(naming.trim()); }}>
-                    <input className="input sm" aria-label="Profile name" placeholder="Profile name" value={naming} autoFocus onChange={(e) => setNaming(e.target.value)} onKeyDown={(e) => e.key === "Escape" && setNaming(null)} />
+                    <input className="input sm" aria-label="Profile name" placeholder="Profile name" value={naming} autoFocus onChange={(e) => setNaming(e.target.value)} onKeyDown={(e) => { if (e.key === "Escape") { e.stopPropagation(); setNaming(null); } }} />
                     <button className="btn sm" type="submit" disabled={!naming.trim()}>Save</button>
                   </form>)}
             </div>
@@ -315,16 +360,19 @@ export default function App() {
           </section>
 
           <section className="card">
-            <label htmlFor="cmd" className="label">Command <span className="muted">— edit it directly if you like; the options above follow along</span></label>
+            <h2><label htmlFor="cmd" className="label">Command</label></h2>
+            <p id="cmd-help" className="help" style={{ margin: "0 0 8px" }}>Edit it directly if you like; the options above follow along. Enter runs the scan.</p>
             <div className="cmd-wrap">
-              <input id="cmd" className="input mono" value={tab.cmd} spellCheck={false} autoComplete="off" autoCapitalize="off" disabled={running} onChange={(e) => setCmd(e.target.value)} />
-              <button className="btn sm" onClick={() => navigator.clipboard?.writeText(tab.cmd)} aria-label="Copy command">Copy</button>
+              <input id="cmd" className="input mono" value={tab.cmd} spellCheck={false} autoComplete="off" autoCapitalize="off" disabled={running} aria-describedby="cmd-help" onChange={(e) => setCmd(e.target.value)} onKeyDown={(e) => e.key === "Enter" && !e.metaKey && !e.ctrlKey && canRun && run()} />
+              <button className="btn sm" onClick={copyCmd} aria-label="Copy command">Copy</button>
             </div>
+            <p className="help" role="status" style={{ minHeight: 0 }}>{copyMsg}</p>
             {opts.extra.length > 0 && <p className="help">Kept as typed: <code>{opts.extra.join(" ")}</code></p>}
           </section>
 
         </main>
       </div>
+      {palette && <Palette items={paletteItems} onClose={() => setPalette(false)} />}
     </div>
   );
 }

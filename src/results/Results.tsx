@@ -3,6 +3,7 @@ import type { Host, NmapResult } from "../nmap";
 import Compare, { type Other } from "./Compare";
 import { download } from "./files";
 import { NO_FILTERS, bestOs, filterHosts, groupByService, hostName, openPorts, osFamilies, serviceNames, toCsv, toJson, versionText, type Filters } from "./model";
+import { rovingKeys } from "../ui/roving";
 import Topology from "./Topology";
 import "./results.css";
 
@@ -25,8 +26,8 @@ export default function Results({ result, live, xml, name, others }: Props) {
   return (
     <section className="card results-card" aria-label="Scan results">
       <div className="res-head">
-        <div role="tablist" aria-label="Result views" className="seg">
-          {VIEWS.map(([v, label]) => <button key={v} role="tab" aria-selected={view === v} className={view === v ? "on" : ""} onClick={() => setView(v)}>{label}</button>)}
+        <div role="tablist" aria-label="Result views" className="seg" onKeyDown={rovingKeys}>
+          {VIEWS.map(([v, label]) => <button key={v} role="tab" id={"res-tab-" + v} aria-controls="res-panel" aria-selected={view === v} tabIndex={view === v ? 0 : -1} className={view === v ? "on" : ""} onClick={() => setView(v)}>{label}</button>)}
         </div>
         {live && <span className="live"><i />Live — updating as devices finish</span>}
         <div className="res-actions">
@@ -41,6 +42,7 @@ export default function Results({ result, live, xml, name, others }: Props) {
         </div>
       </div>
 
+      <div role="tabpanel" id="res-panel" aria-labelledby={"res-tab-" + view}>
       {view === "hosts" && (
         <>
           <div className="filters">
@@ -84,6 +86,7 @@ export default function Results({ result, live, xml, name, others }: Props) {
       {view === "services" && <Services hosts={upHosts} onPick={pick} />}
       {view === "map" && <Topology hosts={result.hosts} onPick={pick} />}
       {view === "compare" && <Compare current={result} others={others} />}
+      </div>
     </section>
   );
 }
