@@ -15,7 +15,8 @@ export function parseXml(src: string): XNode {
     const top = stack[stack.length - 1];
     if (m[1] !== undefined) top.text += m[1];
     else if (m[2]) {
-      const i = stack.map((n) => n.name).lastIndexOf(m[2]);
+      let i = stack.length - 1;
+      while (i > 0 && stack[i].name !== m[2]) i--;
       if (i > 0) stack.length = i;
     } else if (m[3]) {
       const attrs: Record<string, string> = {};
