@@ -23,7 +23,7 @@ export interface NmapResult {
 }
 
 const kids = (n: XNode | undefined, name: string) => n?.children.filter((c) => c.name === name) ?? [];
-const kid = (n: XNode | undefined, name: string) => kids(n, name)[0];
+const kid = (n: XNode | undefined, name: string) => n?.children.find((c) => c.name === name);
 const num = (s?: string) => (s === undefined || s === "" || isNaN(+s) ? undefined : +s);
 const scripts = (n?: XNode): Script[] => kids(n, "script").map((s) => ({ id: s.attrs.id ?? "", output: s.attrs.output ?? "" }));
 

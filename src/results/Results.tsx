@@ -18,7 +18,9 @@ export default function Results({ result, live, xml, name, others }: Props) {
   const [sel, setSel] = useState<string | undefined>();
   const hosts = useMemo(() => filterHosts(result.hosts, f), [result.hosts, f]);
   const upHosts = useMemo(() => result.hosts.filter((h) => h.status === "up"), [result.hosts]);
-  const selected = result.hosts.find((h) => h.addr === sel && hosts.includes(h)) ?? hosts[0];
+  const services = useMemo(() => serviceNames(result.hosts), [result.hosts]);
+  const systems = useMemo(() => osFamilies(result.hosts), [result.hosts]);
+  const selected = useMemo(() => hosts.find((h) => h.addr === sel) ?? hosts[0], [hosts, sel]);
   const set = <K extends keyof Filters>(k: K, v: Filters[K]) => setF((x) => ({ ...x, [k]: v }));
   const menu = useRef<HTMLDetailsElement>(null);
   useEffect(() => {
@@ -59,10 +61,10 @@ export default function Results({ result, live, xml, name, others }: Props) {
               <option value="up">Online</option><option value="down">Offline</option><option value="all">All devices</option>
             </select>
             <select className="input sm" aria-label="Service" value={f.service} onChange={(e) => set("service", e.target.value)}>
-              <option value="">Any service</option>{serviceNames(result.hosts).map((s) => <option key={s}>{s}</option>)}
+              <option value="">Any service</option>{services.map((s) => <option key={s}>{s}</option>)}
             </select>
             <select className="input sm" aria-label="Operating system" value={f.os} onChange={(e) => set("os", e.target.value)}>
-              <option value="">Any system</option>{osFamilies(result.hosts).map((s) => <option key={s}>{s}</option>)}
+              <option value="">Any system</option>{systems.map((s) => <option key={s}>{s}</option>)}
             </select>
             <input className="input sm port" inputMode="numeric" aria-label="Open port number" placeholder="Port" value={f.port} onChange={(e) => set("port", e.target.value.replace(/\D/g, ""))} />
             <label className="check"><input type="checkbox" checked={f.openOnly} onChange={(e) => set("openOnly", e.target.checked)} /> Has open ports</label>
@@ -106,7 +108,7 @@ function Services({ hosts, onPick }: { hosts: Host[]; onPick: (addr: string) => 
     <ul className="svc-list">
       {groups.map((g) => (
         <li key={g.name} className="svc">
-          <div className="svc-h"><strong>{g.name}</strong><span className="muted small">{g.entries.length} port{g.entries.length === 1 ? "" : "s"} on {new Set(g.entries.map((e) => e.host.addr)).size} device{new Set(g.entries.map((e) => e.host.addr)).size === 1 ? "" : "s"}</span></div>
+          <div className="svc-h"><strong>{g.name}</strong><span className="muted small">{g.entries.length} port{g.entries.length === 1 ? "" : "s"} on {g.devices} device{g.devices === 1 ? "" : "s"}</span></div>
           <div className="svc-body">
             {g.entries.map(({ host, port }) => (
               <button key={host.addr + port.protocol + port.port} className="svc-entry" onClick={() => onPick(host.addr)} title={versionText(port) || undefined}>
@@ -122,7 +124,7 @@ function Services({ hosts, onPick }: { hosts: Host[]; onPick: (addr: string) => 
 
 function HostDetail({ h }: { h: Host }) {
   const [openScripts, setOpenScripts] = useState<string | null>(null);
-  const ports = [...h.ports].sort((a, b) => (a.state === "open" ? 0 : 1) - (b.state === "open" ? 0 : 1) || a.port - b.port);
+  const ports = useMemo(() => [...h.ports].sort((a, b) => (a.state === "open" ? 0 : 1) - (b.state === "open" ? 0 : 1) || a.port - b.port), [h.ports]);
   return (
     <article className="detail" key={h.addr}>
       <header>

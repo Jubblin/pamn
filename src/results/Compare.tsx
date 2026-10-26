@@ -1,4 +1,4 @@
-import { useRef, useState } from "react";
+import { useMemo, useRef, useState } from "react";
 import { parseNmapXml, type Host, type NmapResult } from "../nmap";
 import { compareScans, diffCount, hostName, versionText, type PortDiff } from "./model";
 
@@ -12,7 +12,8 @@ export default function Compare({ current, others }: { current: NmapResult; othe
   const [err, setErr] = useState("");
   const input = useRef<HTMLInputElement>(null);
   const base = file ?? others[+pick] ?? null;
-  const d = base ? compareScans(base.result, current) : null;
+  const baseResult = base?.result;
+  const d = useMemo(() => (baseResult ? compareScans(baseResult, current) : null), [baseResult, current]);
 
   const load = async (f?: File) => {
     if (!f) return;

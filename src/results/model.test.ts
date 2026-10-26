@@ -1,7 +1,7 @@
 import { readFileSync } from "node:fs";
 import { describe, expect, it } from "vitest";
 import { parseNmapXml } from "../nmap";
-import { NO_FILTERS, buildTopology, compareScans, filterHosts, groupByService, parseLive, toCsv } from "./model";
+import { NO_FILTERS, buildTopology, compareScans, filterHosts, createLiveParser, groupByService, parseLive, toCsv } from "./model";
 
 const fx = (n: string) => parseNmapXml(readFileSync(new URL(`../nmap/fixtures/${n}`, import.meta.url), "utf8"));
 const host = (addr: string, ports: [number, string, string?][], hops: [number, string][] = []) =>
@@ -15,6 +15,26 @@ describe("real nmap output", () => {
     const key = (r: typeof live) => r.hosts.map((h) => `${h.addr}:${h.ports.filter((p) => p.state === "open").map((p) => p.port).join(",")}`);
     expect(live.hosts.length).toBe(2);
     expect(key(live)).toEqual(key(xml));
+  });
+});
+
+describe("incremental live parser", () => {
+  const txt = readFileSync(new URL("./fixtures/real-output.txt", import.meta.url), "utf8").split("\n");
+  it("matches a full parse when lines arrive one at a time, and keeps the result stable when nothing changes", () => {
+    const p = createLiveParser();
+    let prev;
+    for (let i = 1; i <= txt.length; i++) prev = p(txt.slice(0, i));
+    expect(prev!.hosts).toEqual(parseLive(txt).hosts);
+    expect(p(txt.slice())).toBe(prev); // same content, no new result
+    expect(createLiveParser()([]).hosts).toEqual([]);
+  });
+  it("resets when the log is cleared and tracks a capped, scrolling log", () => {
+    const p = createLiveParser();
+    p(["Nmap scan report for 10.0.0.1", "22/tcp open ssh"]);
+    expect(p([]).hosts).toEqual([]);
+    const a = ["x", "Nmap scan report for 10.0.0.2"], b = ["Nmap scan report for 10.0.0.2", "80/tcp open http"];
+    p(a);
+    expect(p(b).hosts[0].ports.map((q) => q.port)).toEqual([80]);
   });
 });
 

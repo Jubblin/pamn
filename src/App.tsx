@@ -7,7 +7,7 @@ import Results from "./results/Results";
 import About from "./ui/About";
 import Palette, { type PaletteItem } from "./ui/Palette";
 import { rovingKeys } from "./ui/roving";
-import { parseLive } from "./results/model";
+import { createLiveParser } from "./results/model";
 
 type Status = "idle" | "running" | "done" | "error" | "cancelled";
 interface Tab {
@@ -168,7 +168,13 @@ export default function App() {
     } catch (err) { setOpenError(`Couldn't open ${f.name}: ${err instanceof Error ? err.message : err}`); }
   };
   const fileInput = useRef<HTMLInputElement>(null);
-  const live = useMemo(() => (running ? parseLive(tab.log) : undefined), [running, tab.log]);
+  const liveParsers = useRef(new Map<string, ReturnType<typeof createLiveParser>>());
+  const live = useMemo(() => {
+    if (!running) { liveParsers.current.delete(tab.key); return undefined; }
+    let p = liveParsers.current.get(tab.key);
+    if (!p) liveParsers.current.set(tab.key, (p = createLiveParser()));
+    return p(tab.log);
+  }, [running, tab.key, tab.log]);
   const shown = running ? live : tab.result;
   const others = tabs.filter((t) => t.key !== tab.key && t.result).map((t) => ({ label: `${tabTitle(t)} — ${t.cmd}`, result: t.result! }));
 
