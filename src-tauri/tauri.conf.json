@@ -29,7 +29,6 @@
   },
   "bundle": {
     "active": true,
-    "createUpdaterArtifacts": true,
     "targets": "all",
     "resources": {
       "resources/nmap/": "nmap/",

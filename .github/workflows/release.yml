@@ -40,4 +40,4 @@ jobs:
           releaseName: Pamn ${{ github.ref_name }}
           releaseDraft: false
           uploadUpdaterJson: true
-          args: ${{ matrix.args }}
+          args: ${{ matrix.args }} --config '{"bundle":{"createUpdaterArtifacts":true}}'
