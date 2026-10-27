@@ -1,5 +1,5 @@
 {
   "identifier": "default",
   "windows": ["main"],
-  "permissions": ["core:default", "dialog:allow-save", "fs:allow-write-text-file"]
+  "permissions": ["core:default", "dialog:allow-save", "fs:allow-write-text-file", "updater:default", "process:allow-restart"]
 }

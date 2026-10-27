@@ -30,3 +30,13 @@ from the installer, Npcap is not bundled; Microsoft's x86 VC++ redistributable i
 `.github/workflows/build.yml` runs it and `tauri build` on macOS (arm64 + x64), Windows and Linux.
 Bundled Nmap is NPSL and Npcap has its own license (non-commercial free edition) — see `THIRD_PARTY_NOTICES.md`.
 Code signing/notarization is not configured.
+
+## Auto-update (macOS, Linux AppImage)
+Pamn checks `https://github.com/Jubblin/pamn/releases/latest/download/latest.json` on launch (silently; offline is ignored) and from **About → Check for updates**. Windows and `.deb` builds do not self-update.
+
+One-time setup:
+1. `npm run tauri signer generate -- -w ~/.tauri/pamn.key`
+2. Put the printed public key in `src-tauri/tauri.conf.json` → `plugins.updater.pubkey` (replacing the placeholder).
+3. Add GitHub repo secrets `TAURI_SIGNING_PRIVATE_KEY` (contents of the key file) and `TAURI_SIGNING_PRIVATE_KEY_PASSWORD`.
+
+Release: bump the version in `package.json`, `src-tauri/Cargo.toml` and `tauri.conf.json`, then push a tag `vX.Y.Z`. `.github/workflows/release.yml` builds macOS (arm64 + x64) and Linux AppImage and publishes the release with `latest.json`.

@@ -47,6 +47,15 @@ const mock = (() => {
   };
 })();
 
+export type Update = { version: string; install: () => Promise<void> };
+/** Resolves to the available update, or null when up to date / not running in Tauri. Rejects if the check fails. */
+export async function checkUpdate(): Promise<Update | null> {
+  if (!inTauri) return null;
+  const u = await (await import("@tauri-apps/plugin-updater")).check();
+  if (!u) return null;
+  return { version: u.version, install: async () => { await u.downloadAndInstall(); await (await import("@tauri-apps/plugin-process")).relaunch(); } };
+}
+
 export const npcapMissing = (): Promise<boolean> => (inTauri ? invoke<boolean>("npcap_missing") : Promise.resolve(false));
 export const vcruntimeMissing = (): Promise<boolean> => (inTauri ? invoke<boolean>("vcruntime_missing") : Promise.resolve(false));
 export const openNpcapPage = (): Promise<void> => (inTauri ? invoke<void>("open_npcap_page") : Promise.resolve());

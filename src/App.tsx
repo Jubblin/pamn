@@ -1,10 +1,11 @@
 import { useCallback, useEffect, useMemo, useRef, useState } from "react";
 import { buildCommand, parseCommand, parseNmapXml, tokenize, type NmapOptions, type NmapResult } from "./nmap";
-import { cancelScan, detectNmap, npcapMissing, onScanEvents, openNpcapPage, startScan, vcruntimeMissing, type DoneEvent, type NmapInfo, type OutputEvent } from "./ui/bridge";
+import { cancelScan, checkUpdate, detectNmap, npcapMissing, onScanEvents, openNpcapPage, startScan, vcruntimeMissing, type DoneEvent, type NmapInfo, type Update, type OutputEvent } from "./ui/bridge";
 import { PRESETS, SCAN_TYPES, TIMINGS, applyFlags, invalidTarget, optionsKey, presetKey } from "./ui/presets";
 import { useStored, type HistoryItem, type Profile } from "./ui/store";
 import Results from "./results/Results";
 import About from "./ui/About";
+import UpdatePrompt from "./ui/UpdatePrompt";
 import Palette, { type PaletteItem } from "./ui/Palette";
 import { rovingKeys } from "./ui/roving";
 import { parseLive } from "./results/model";
@@ -49,6 +50,7 @@ export default function App() {
   const [about, setAbout] = useState(false);
   const [copyMsg, setCopyMsg] = useState("");
   const [noNpcap, setNoNpcap] = useState(false);
+  const [update, setUpdate] = useState<Update | null>(null);
   const [noVc, setNoVc] = useState(false);
 
   const tabsRef = useRef(tabs);
@@ -61,6 +63,7 @@ export default function App() {
   useEffect(() => { document.documentElement.dataset.theme = theme; }, [theme]);
   useEffect(() => { npcapMissing().then(setNoNpcap).catch(() => {}); }, []);
   useEffect(() => { vcruntimeMissing().then(setNoVc).catch(() => {}); }, []);
+  useEffect(() => { checkUpdate().then(setUpdate).catch(() => {}); }, []); // silent: offline or failed checks are ignored
   useEffect(() => { detectNmap().then(setNmap).catch(() => setNmap(null)); }, []);
 
   // Route scan events to their tab. Events can arrive before start_scan has returned the id, so buffer those.
@@ -289,6 +292,7 @@ export default function App() {
         <main className="main" key={tab.key}>
           <div className="sr" role="status">{statusText}</div>
           {openError && <div className="banner warn" role="alert"><span>{openError}</span><button className="link" onClick={() => setOpenError("")}>Dismiss</button></div>}
+          {update && <UpdatePrompt update={update} onLater={() => setUpdate(null)} />}
           {noNpcap && (
             <div className="banner warn" role="alert">
               <div>
